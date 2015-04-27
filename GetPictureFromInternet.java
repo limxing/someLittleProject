@@ -19,8 +19,10 @@ import android.widget.Toast;
 
 public class MainActivity extends Activity {
 	protected static final int SUCCESS = 1;
-	protected static final int FALSE = 2;
+
 	protected static final int ERROR = 3;
+
+	protected static final int FAILD = 2;
 	private EditText et_path;
 	private ImageView iv;
 	private ProgressDialog pd;
@@ -33,11 +35,11 @@ public class MainActivity extends Activity {
 				Bitmap bitmap=(Bitmap) msg.obj;
 				iv.setImageBitmap(bitmap);
 				break;
-			case FALSE:
-				Toast.makeText(MainActivity.this, "接收失败", 0).show();
+			case FAILD:
+				Toast.makeText(MainActivity.this, "路径错误", 0).show();
 				break;
 			case ERROR:
-				Toast.makeText(MainActivity.this, "请检查网络连接", 0).show();
+				Toast.makeText(MainActivity.this, "网络错误，或路径有误。", 0).show();
 				break;
 			}
 		}
@@ -70,6 +72,7 @@ public class MainActivity extends Activity {
 					HttpURLConnection conn = (HttpURLConnection) url
 							.openConnection();
 					// 设置服务器的访问信息
+
 					conn.setConnectTimeout(5000);
 					conn.setRequestMethod("GET");
 					// 获取服务器响应的信息状态码
@@ -85,7 +88,12 @@ public class MainActivity extends Activity {
 						msg.obj = bitmap;
 						handler.sendMessage(msg);
 						is.close();
-					} 
+					} else{
+						Message msg = Message.obtain();
+						msg.what = FAILD;
+						handler.sendMessage(msg);
+						
+					}
 				} catch (Exception e) {
 					e.printStackTrace();
 					Message msg = Message.obtain();

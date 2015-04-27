@@ -1,0 +1,97 @@
+package com.example.lenovo;
+
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+
+import android.app.Activity;
+import android.app.ProgressDialog;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.text.TextUtils;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import com.example.lenovo.utils.StreamTools;
+
+public class MainActivity extends Activity {
+	protected static final int SUCCESS = 1;
+	protected static final int ERROR = 2;
+	protected static final int FAIL = 3;
+	private EditText et;
+	private TextView tv;
+	private ProgressDialog pd;
+	private Handler handler = new Handler() {
+		public void handleMessage(Message msg) {
+			pd.dismiss();
+			switch (msg.what) {
+			case SUCCESS:
+				String result = (String) msg.obj;
+				tv.setText(result);
+				break;
+			case FAIL:
+				Toast.makeText(MainActivity.this, "解析有误，请检查路径", 0).show();
+				break;
+			case ERROR:
+				Toast.makeText(MainActivity.this, "网络错误", 0).show();
+				break;
+			}
+
+		}
+	};
+
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_main);
+		et = (EditText) findViewById(R.id.et);
+		tv = (TextView) findViewById(R.id.tv);
+	}
+
+	public void get(View view) {
+		final String path = et.getText().toString().trim();
+		if (TextUtils.isEmpty(path)) {
+			Toast.makeText(this, "请输入路径", 0).show();
+		}
+		pd = new ProgressDialog(this);
+		pd.setMessage("加载中");
+		pd.show();
+
+		new Thread() {
+			public void run() {
+				try {
+					URL url = new URL(path);
+					HttpURLConnection conn = (HttpURLConnection) url
+							.openConnection();
+					conn.setRequestMethod("GET");
+					conn.setReadTimeout(5000);
+					int code = conn.getResponseCode();
+					if (code == 200) {
+						InputStream is = conn.getInputStream();
+						String result = StreamTools.readStream(is);
+						Message msg = Message.obtain();
+						msg.what = SUCCESS;
+						msg.obj = result;
+						handler.sendMessage(msg);
+						is.close();
+
+					} else {
+						Message msg = Message.obtain();
+						msg.what = FAIL;
+						handler.sendMessage(msg);
+					}
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					Message msg = Message.obtain();
+					msg.what = ERROR;
+					handler.sendMessage(msg);
+
+				}
+			};
+		}.start();
+
+	}
+}
